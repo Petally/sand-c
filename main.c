@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #define FRAMERATE 165
@@ -103,14 +104,17 @@ void UpdateWater(int x, int y)
 
 void UpdateWorld(void)
 {
-    for (int x = 0; x < WORLD_WIDTH; x++) {
-        for (int y = WORLD_HEIGHT; y > 0; y--) {
-            switch (grid[x][y]) {
+    for (int row = WORLD_HEIGHT - 1; row > 0; row--) {
+        int leftToRight = (rand() % 2) > 0;
+
+        for (int i = 0; i < WORLD_WIDTH; i++) {
+            int columnOffset = leftToRight ? i : -i - 1 + WORLD_WIDTH;
+            switch (grid[columnOffset][row]) {
                 case SAND:
-                    UpdateSand(x, y);
+                    UpdateSand(columnOffset, row);
                     break;
                 case WATER:
-                    UpdateWater(x, y);
+                    UpdateWater(columnOffset, row);
                     break;
                 default:
                     break;

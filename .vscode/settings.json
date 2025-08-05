@@ -4,5 +4,6 @@
         "functional": "c",
         "*.m": "c",
         "limits": "c"
-    }
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }
