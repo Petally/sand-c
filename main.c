@@ -51,15 +51,27 @@ void DrawWorld(void)
             Color particleColor = BLACK;
             if (grid[x][y] == SAND)
                 particleColor = YELLOW;
-            DrawRectangle(x * WINDOW_SCALING, y * WINDOW_SCALING, WINDOW_SCALING, WINDOW_SCALING, particleColor);
+            DrawPixel(x, y, particleColor);
         }
     }
 }
 
-void Draw(void)
+void Draw(Camera2D worldSpaceCamera, Camera2D screenSpaceCamera, RenderTexture2D *target, Rectangle sourceRec, Rectangle destRec, Vector2 origin)
 {
+    BeginTextureMode(*target);
+        ClearBackground(RAYWHITE);
+
+        BeginMode2D(worldSpaceCamera);
+            DrawWorld();
+        EndMode2D();
+    EndTextureMode();
+
     BeginDrawing();
-        DrawWorld();
+        ClearBackground(RED);
+
+        BeginMode2D(screenSpaceCamera);
+            DrawTexturePro(target->texture, sourceRec, destRec, origin, 0.0f, WHITE);
+        EndMode2D();
     EndDrawing();
 }
 
@@ -72,12 +84,28 @@ int main(void)
 
     SetTargetFPS(FRAMERATE);
 
+    Camera2D worldSpaceCamera = { 0 };  // Game world camera
+    worldSpaceCamera.zoom = 1.0f;
+    worldSpaceCamera.target = (Vector2){ 0, 0 };
+
+    Camera2D screenSpaceCamera = { 0 }; // Smoothing camera
+    screenSpaceCamera.zoom = 1.0f;
+    screenSpaceCamera.target = (Vector2){ 0, 0 };
+
+    RenderTexture2D target = LoadRenderTexture(WORLD_WIDTH, WORLD_HEIGHT); // This is where we'll be drawing everything
+
+    // The target's height is flipped (in the source Rectangle), due to OpenGL reasons
+    Rectangle sourceRec = { 0.0f, 0.0f, (float)target.texture.width, -(float)target.texture.height };
+    Rectangle destRec = { 0, 0, screenWidth, screenHeight };
+
+    Vector2 origin = { 0.0f, 0.0f };
+
     while (!WindowShouldClose())
     {
         // Update
         HandleInput();
         // Draw
-        Draw();
+        Draw(worldSpaceCamera, screenSpaceCamera, &target, sourceRec, destRec, origin);
     }
 
     CloseWindow();
