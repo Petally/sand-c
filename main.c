@@ -53,6 +53,13 @@ void SetParticle(int x, int y, enum ParticleType particleType)
     grid[x][y] = particleType;
 }
 
+void SwapParticles(int x1, int y1, int x2, int y2)
+{
+    enum ParticleType temp = grid[x1][y1];
+    SetParticle(x1, y1, grid[x2][y2]);
+    SetParticle(x2, y2, temp);
+}
+
 void SetParticleRectangle(int centerX, int centerY, int size, enum ParticleType particleType)
 {
     for (int x = 0; x < size; x++) {
@@ -65,40 +72,32 @@ void SetParticleRectangle(int centerX, int centerY, int size, enum ParticleType 
 void UpdateSand(int x, int y)
 {
     if (grid[x][y + 1] == EMPTY) {
-        grid[x][y + 1] = SAND;
-        grid[x][y] = EMPTY;
+        SwapParticles(x, y, x, y + 1);
     }
     else if (grid[x - 1][y + 1] == EMPTY) {
-        grid[x - 1][y + 1] = SAND;
-        grid[x][y] = EMPTY;
+        SwapParticles(x, y, x - 1, y + 1);
     }
     else if (grid[x + 1][y + 1] == EMPTY) {
-        grid[x + 1][y + 1] = SAND;
-        grid[x][y] = EMPTY;
+        SwapParticles(x, y, x + 1, y + 1);
     }
 }
 
 void UpdateWater(int x, int y)
 {
     if (grid[x][y + 1] == EMPTY) {
-        grid[x][y + 1] = WATER;
-        grid[x][y] = EMPTY;
+        SwapParticles(x, y, x, y + 1);
     }
     else if (grid[x - 1][y] == EMPTY) {
-        grid[x - 1][y] = WATER;
-        grid[x][y] = EMPTY;
+        SwapParticles(x, y, x - 1, y);
     }
     else if (grid[x + 1][y] == EMPTY) {
-        grid[x + 1][y] = WATER;
-        grid[x][y] = EMPTY;
+        SwapParticles(x, y, x + 1, y);
     }
     else if (grid[x - 1][y + 1] == EMPTY) {
-        grid[x - 1][y + 1] = WATER;
-        grid[x][y] = EMPTY;
+        SwapParticles(x, y, x - 1, y + 1);
     }
     else if (grid[x + 1][y + 1] == EMPTY) {
-        grid[x + 1][y + 1] = WATER;
-        grid[x][y] = EMPTY;
+        SwapParticles(x, y, x + 1, y + 1);
     }
 }
 
