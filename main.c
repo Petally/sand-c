@@ -13,11 +13,26 @@ enum ParticleType {
     SAND,
     WALL,
     WATER,
+    IMPENETRABLE_WALL
 };
 
 enum ParticleType grid[WORLD_WIDTH][WORLD_HEIGHT] = { EMPTY };
 
-Vector2 MouseToWorldSpace()
+void InitGrid(void)
+{
+    // Add walls
+    for (int x = 0; x < WORLD_WIDTH; x++) {
+        grid[x][0] = IMPENETRABLE_WALL;
+        grid[x][WORLD_HEIGHT - 1] = IMPENETRABLE_WALL;
+    }
+
+    for (int y = 0; y < WORLD_HEIGHT; y++) {
+        grid[0][y] = IMPENETRABLE_WALL;
+        grid[WORLD_WIDTH - 1][y] = IMPENETRABLE_WALL;
+    }
+}
+
+Vector2 MouseToWorldSpace(void)
 {
     Vector2 worldPos = GetMousePosition();
     // Scale down (for some reason Vector2Scale doesn't work)
@@ -31,7 +46,30 @@ Vector2 MouseToWorldSpace()
 // Do not pass out of bounds values
 void SetParticle(int x, int y, enum ParticleType particleType)
 {
+    if (grid[x][y] == IMPENETRABLE_WALL) return;
     grid[x][y] = particleType;
+}
+
+void UpdateWorld(void)
+{
+    for (int x = 0; x < WORLD_WIDTH; x++) {
+        for (int y = WORLD_HEIGHT; y > 0; y--) {
+            if (grid[x][y] == SAND) {
+                if (grid[x][y + 1] == EMPTY) {
+                    grid[x][y + 1] = SAND;
+                    grid[x][y] = EMPTY;
+                }
+                else if (grid[x - 1][y + 1] == EMPTY) {
+                    grid[x - 1][y + 1] = SAND;
+                    grid[x][y] = EMPTY;
+                }
+                else if (grid[x + 1][y + 1] == EMPTY) {
+                    grid[x + 1][y + 1] = SAND;
+                    grid[x][y] = EMPTY;
+                }
+            }
+        }
+    }
 }
 
 void HandleInput(void)
@@ -51,6 +89,8 @@ void DrawWorld(void)
             Color particleColor = BLACK;
             if (grid[x][y] == SAND)
                 particleColor = YELLOW;
+            if (grid[x][y] == IMPENETRABLE_WALL)
+                particleColor = GRAY;
             DrawPixel(x, y, particleColor);
         }
     }
@@ -100,9 +140,12 @@ int main(void)
 
     Vector2 origin = { 0.0f, 0.0f };
 
+    InitGrid();
+
     while (!WindowShouldClose())
     {
         // Update
+        UpdateWorld();
         HandleInput();
         // Draw
         Draw(worldSpaceCamera, screenSpaceCamera, &target, sourceRec, destRec, origin);
