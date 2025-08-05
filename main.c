@@ -62,41 +62,99 @@ void SetParticleRectangle(int centerX, int centerY, int size, enum ParticleType 
     }
 }
 
+void UpdateSand(int x, int y)
+{
+    if (grid[x][y + 1] == EMPTY) {
+        grid[x][y + 1] = SAND;
+        grid[x][y] = EMPTY;
+    }
+    else if (grid[x - 1][y + 1] == EMPTY) {
+        grid[x - 1][y + 1] = SAND;
+        grid[x][y] = EMPTY;
+    }
+    else if (grid[x + 1][y + 1] == EMPTY) {
+        grid[x + 1][y + 1] = SAND;
+        grid[x][y] = EMPTY;
+    }
+}
+
+void UpdateWater(int x, int y)
+{
+    if (grid[x][y + 1] == EMPTY) {
+        grid[x][y + 1] = WATER;
+        grid[x][y] = EMPTY;
+    }
+    else if (grid[x - 1][y] == EMPTY) {
+        grid[x - 1][y] = WATER;
+        grid[x][y] = EMPTY;
+    }
+    else if (grid[x + 1][y] == EMPTY) {
+        grid[x + 1][y] = WATER;
+        grid[x][y] = EMPTY;
+    }
+    else if (grid[x - 1][y + 1] == EMPTY) {
+        grid[x - 1][y + 1] = WATER;
+        grid[x][y] = EMPTY;
+    }
+    else if (grid[x + 1][y + 1] == EMPTY) {
+        grid[x + 1][y + 1] = WATER;
+        grid[x][y] = EMPTY;
+    }
+}
+
 void UpdateWorld(void)
 {
     for (int x = 0; x < WORLD_WIDTH; x++) {
         for (int y = WORLD_HEIGHT; y > 0; y--) {
-            if (grid[x][y] == SAND) {
-                if (grid[x][y + 1] == EMPTY) {
-                    grid[x][y + 1] = SAND;
-                    grid[x][y] = EMPTY;
-                }
-                else if (grid[x - 1][y + 1] == EMPTY) {
-                    grid[x - 1][y + 1] = SAND;
-                    grid[x][y] = EMPTY;
-                }
-                else if (grid[x + 1][y + 1] == EMPTY) {
-                    grid[x + 1][y + 1] = SAND;
-                    grid[x][y] = EMPTY;
-                }
+            switch (grid[x][y]) {
+                case SAND:
+                    UpdateSand(x, y);
+                    break;
+                case WATER:
+                    UpdateWater(x, y);
+                    break;
+                default:
+                    break;
             }
         }
     }
 }
 
+enum ParticleType selectedParticleType = SAND;
+void HandleParticleTypeSelectInput()
+{
+    if (IsKeyPressed('1'))
+        selectedParticleType = SAND;
+    if (IsKeyPressed('2'))
+        selectedParticleType = WATER;
+    if (IsKeyPressed('3'))
+        selectedParticleType = WALL;
+}
+
 int brushSize = 9;
-void HandleInput(void)
+void HandleDrawInput(void)
 {
     Vector2 mousePos = MouseToWorldSpace();
 
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         //SetParticle(mousePos.x, mousePos.y, SAND);
-        SetParticleRectangle(mousePos.x, mousePos.y, brushSize, SAND);
+        SetParticleRectangle(mousePos.x, mousePos.y, brushSize, selectedParticleType);
     }
+}
+
+void HandleBrushSizeInput(void)
+{
     if (IsKeyPressed('='))
         brushSize = fmin(brushSize + 1, 15);
     if (IsKeyPressed('-'))
         brushSize = fmax(brushSize - 1, 1);
+}
+
+void HandleInput(void)
+{
+    HandleParticleTypeSelectInput();
+    HandleDrawInput();
+    HandleBrushSizeInput();
 }
 
 // Draws the grid to the screen
@@ -104,11 +162,24 @@ void DrawWorld(void)
 {
     for (int x = 0; x < WORLD_WIDTH; x++) {
         for (int y = 0; y < WORLD_HEIGHT; y++) {
-            Color particleColor = BLACK;
-            if (grid[x][y] == SAND)
-                particleColor = YELLOW;
-            if (grid[x][y] == IMPENETRABLE_WALL)
-                particleColor = GRAY;
+            Color particleColor;
+            switch (grid[x][y]) {
+                case SAND:
+                    particleColor = YELLOW;
+                    break;
+                case IMPENETRABLE_WALL:
+                    particleColor = GRAY;
+                    break;
+                case WALL:
+                    particleColor = GRAY;
+                    break;
+                case WATER:
+                    particleColor = BLUE;
+                    break;
+                default:
+                    particleColor = BLACK;
+                    break;
+            }
             DrawPixel(x, y, particleColor);
         }
     }
