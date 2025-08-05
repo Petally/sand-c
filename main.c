@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include <stdio.h>
+#include <math.h>
 
 #define FRAMERATE 165
 #define WORLD_WIDTH 480
@@ -43,11 +44,22 @@ Vector2 MouseToWorldSpace(void)
 }
 
 // Sets a particle in the grid
-// Do not pass out of bounds values
 void SetParticle(int x, int y, enum ParticleType particleType)
 {
     if (grid[x][y] == IMPENETRABLE_WALL) return;
+    if (x < 0 || x > WORLD_WIDTH - 1) return;
+    if (y < 0 || y > WORLD_HEIGHT - 1) return;
+
     grid[x][y] = particleType;
+}
+
+void SetParticleRectangle(int centerX, int centerY, int size, enum ParticleType particleType)
+{
+    for (int x = 0; x < size; x++) {
+        for (int y = 0; y < size; y++) {
+            SetParticle(x + centerX - size/2, y + centerY - size/2, particleType);
+        }
+    }
 }
 
 void UpdateWorld(void)
@@ -72,13 +84,19 @@ void UpdateWorld(void)
     }
 }
 
+int brushSize = 9;
 void HandleInput(void)
 {
     Vector2 mousePos = MouseToWorldSpace();
 
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-        SetParticle(mousePos.x, mousePos.y, SAND);
+        //SetParticle(mousePos.x, mousePos.y, SAND);
+        SetParticleRectangle(mousePos.x, mousePos.y, brushSize, SAND);
     }
+    if (IsKeyPressed('='))
+        brushSize = fmin(brushSize + 1, 15);
+    if (IsKeyPressed('-'))
+        brushSize = fmax(brushSize - 1, 1);
 }
 
 // Draws the grid to the screen
