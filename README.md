@@ -1,6 +1,8 @@
 # sand-c
 A simple falling sand game in raylib and C.
 
+![Falling sand game preview](https://github.com/Petally/sand-c/blob/main/img/preview.gif?raw=true)
+
 ## Usage
 ### Controls
 Left mouse button -> Place element
