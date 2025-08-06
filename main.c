@@ -5,17 +5,19 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define FRAMERATE 165
-#define WORLD_WIDTH 480
-#define WORLD_HEIGHT 360
-#define WINDOW_SCALING 2
+#define FRAMERATE 60
+#define WORLD_WIDTH 512
+#define WORLD_HEIGHT 512
+#define WINDOW_SCALING 1
 
 enum ParticleType {
     EMPTY,
     SAND,
     WALL,
     WATER,
-    IMPENETRABLE_WALL
+    IMPENETRABLE_WALL,
+    OIL,
+    FIRE,
 };
 
 enum ParticleType grid[WORLD_WIDTH][WORLD_HEIGHT] = { EMPTY };
@@ -72,13 +74,13 @@ void SetParticleRectangle(int centerX, int centerY, int size, enum ParticleType 
 
 void UpdateSand(int x, int y)
 {
-    if (grid[x][y + 1] == EMPTY) {
+    if (grid[x][y + 1] == EMPTY || grid[x][y + 1] == WATER) {
         SwapParticles(x, y, x, y + 1);
     }
-    else if (grid[x - 1][y + 1] == EMPTY) {
+    else if (grid[x - 1][y + 1] == EMPTY || grid[x - 1][y + 1] == WATER) {
         SwapParticles(x, y, x - 1, y + 1);
     }
-    else if (grid[x + 1][y + 1] == EMPTY) {
+    else if (grid[x + 1][y + 1] == EMPTY || grid[x + 1][y + 1] == WATER) {
         SwapParticles(x, y, x + 1, y + 1);
     }
 }
@@ -102,6 +104,55 @@ void UpdateWater(int x, int y)
     }
 }
 
+void UpdateOil(int x, int y)
+{
+    if (grid[x][y + 1] == EMPTY || grid[x][y + 1] == WATER) {
+        SwapParticles(x, y, x, y + 1);
+    }
+    else if (grid[x - 1][y] == EMPTY || grid[x - 1][y] == WATER) {
+        SwapParticles(x, y, x - 1, y);
+    }
+    else if (grid[x + 1][y] == EMPTY || grid[x + 1][y] == WATER) {
+        SwapParticles(x, y, x + 1, y);
+    }
+    else if (grid[x - 1][y + 1] == EMPTY || grid[x - 1][y + 1] == WATER) {
+        SwapParticles(x, y, x - 1, y + 1);
+    }
+    else if (grid[x + 1][y + 1] == EMPTY || grid[x + 1][y + 1] == WATER) {
+        SwapParticles(x, y, x + 1, y + 1);
+    }
+}
+
+void UpdateFire(int x, int y)
+{
+    int extinguishChance = 20;
+    int shouldExtingusih = (rand() % 100) < extinguishChance;
+    if (shouldExtingusih == 1)
+        SetParticle(x, y, EMPTY);
+
+    int catchChance = 50;
+    if (grid[x][y + 1] == OIL) {
+        int shouldCatch = (rand() % 100) < catchChance;
+        if (shouldCatch == 1)
+            SetParticle(x, y + 1, FIRE);
+    }
+    if (grid[x - 1][y] == OIL) {
+        int shouldCatch = (rand() % 100) < catchChance;
+        if (shouldCatch == 1)
+            SetParticle(x - 1, y, FIRE);
+    }
+    if (grid[x + 1][y] == OIL) {
+        int shouldCatch = (rand() % 100) < catchChance;
+        if (shouldCatch == 1)
+            SetParticle(x + 1, y , FIRE);
+    }
+    if (grid[x][y - 1] == OIL) {
+        int shouldCatch = (rand() % 100) < catchChance;
+        if (shouldCatch == 1)
+            SetParticle(x, y - 1, FIRE);
+    }
+}
+
 void UpdateWorld(void)
 {
     for (int row = WORLD_HEIGHT - 1; row > 0; row--) {
@@ -115,6 +166,12 @@ void UpdateWorld(void)
                     break;
                 case WATER:
                     UpdateWater(columnOffset, row);
+                    break;
+                case FIRE:
+                    UpdateFire(columnOffset, row);
+                    break;
+                case OIL:
+                    UpdateOil(columnOffset, row);
                     break;
                 default:
                     break;
@@ -132,9 +189,15 @@ void HandleParticleTypeSelectInput()
         selectedParticleType = WATER;
     if (IsKeyPressed('3'))
         selectedParticleType = WALL;
+    if (IsKeyPressed('4'))
+        selectedParticleType = EMPTY;
+    if (IsKeyPressed('5'))
+        selectedParticleType = FIRE;
+    if (IsKeyPressed('6'))
+        selectedParticleType = OIL;
 }
 
-int brushSize = 9;
+int brushSize = 32;
 void HandleDrawInput(void)
 {
     Vector2 mousePos = MouseToWorldSpace();
@@ -148,9 +211,9 @@ void HandleDrawInput(void)
 void HandleBrushSizeInput(void)
 {
     if (IsKeyPressed('='))
-        brushSize = fmin(brushSize + 1, 15);
+        brushSize = fmin(brushSize + 2, 32);
     if (IsKeyPressed('-'))
-        brushSize = fmax(brushSize - 1, 1);
+        brushSize = fmax(brushSize - 2, 1);
 }
 
 void HandleInput(void)
@@ -179,6 +242,12 @@ void DrawWorld(void)
                 case WATER:
                     particleColor = BLUE;
                     break;
+                case FIRE:
+                    particleColor = RED;
+                    break;
+                case OIL:
+                    particleColor = PURPLE;
+                    break;
                 default:
                     particleColor = BLACK;
                     break;
@@ -188,7 +257,9 @@ void DrawWorld(void)
     }
 }
 
-void Draw(Camera2D worldSpaceCamera, Camera2D screenSpaceCamera, RenderTexture2D *target, Rectangle sourceRec, Rectangle destRec, Vector2 origin)
+void Draw(Camera2D worldSpaceCamera, Camera2D screenSpaceCamera, 
+    RenderTexture2D *target, 
+    Rectangle sourceRec, Rectangle destRec)
 {
     BeginTextureMode(*target);
         ClearBackground(RAYWHITE);
@@ -202,7 +273,8 @@ void Draw(Camera2D worldSpaceCamera, Camera2D screenSpaceCamera, RenderTexture2D
         ClearBackground(RED);
 
         BeginMode2D(screenSpaceCamera);
-            DrawTexturePro(target->texture, sourceRec, destRec, origin, 0.0f, WHITE);
+            DrawTexturePro(target->texture, sourceRec, destRec, (Vector2){ 0, 0 }, 0.0f, WHITE);
+            DrawFPS(0, 0);
         EndMode2D();
     EndDrawing();
 }
@@ -230,8 +302,6 @@ int main(void)
     Rectangle sourceRec = { 0.0f, 0.0f, (float)target.texture.width, -(float)target.texture.height };
     Rectangle destRec = { 0, 0, screenWidth, screenHeight };
 
-    Vector2 origin = { 0.0f, 0.0f };
-
     InitGrid();
 
     while (!WindowShouldClose())
@@ -240,7 +310,7 @@ int main(void)
         UpdateWorld();
         HandleInput();
         // Draw
-        Draw(worldSpaceCamera, screenSpaceCamera, &target, sourceRec, destRec, origin);
+        Draw(worldSpaceCamera, screenSpaceCamera, &target, sourceRec, destRec);
     }
 
     CloseWindow();
