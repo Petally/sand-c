@@ -4,6 +4,7 @@ A simple falling sand game in raylib and C.
 ## Usage
 ### Controls
 Left mouse button -> Place element
+
 "-" / "=" -> Shrink/expand brush size
 
 "1" - "6" -> Select element
